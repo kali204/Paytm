@@ -1,39 +1,29 @@
-import { createContext, useState, useEffect, useContext } from "react";
+import { createContext, useState, useEffect } from "react";
 import axios from "axios";
-import { AuthContext } from "./AuthContext";
 
 export const UserContext = createContext();
 
-const UserProvider = ({ children }) => {
-  const { token } = useContext(AuthContext);
+export const UserProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
   const [balance, setBalance] = useState(0);
-  const [transactions, setTransactions] = useState([]);
 
-  // Fetch user balance
   useEffect(() => {
+    const token = localStorage.getItem("token");
     if (token) {
-      axios
-        .get("http://localhost:5000/api/balance", { headers: { Authorization: `Bearer ${token}` } })
-        .then((response) => setBalance(response.data.balance))
-        .catch(() => setBalance(0));
+      axios.get("http://localhost:5000/api/user", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then((response) => {
+        setUser(response.data.user);
+        setBalance(response.data.balance);
+      })
+      .catch((error) => console.error("Error fetching user:", error));
     }
-  }, [token]);
-
-  // Fetch transactions
-  useEffect(() => {
-    if (token) {
-      axios
-        .get("http://localhost:5000/api/transactions", { headers: { Authorization: `Bearer ${token}` } })
-        .then((response) => setTransactions(response.data.transactions))
-        .catch(() => setTransactions([]));
-    }
-  }, [token]);
+  }, []);
 
   return (
-    <UserContext.Provider value={{ balance, transactions }}>
+    <UserContext.Provider value={{ user, balance, setBalance }}>
       {children}
     </UserContext.Provider>
   );
 };
-
-export default UserProvider;

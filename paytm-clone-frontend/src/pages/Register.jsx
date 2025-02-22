@@ -1,42 +1,38 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { TextField, Button, Container, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 const Register = () => {
+  const { setUser, setToken } = useContext(AuthContext);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [upiId, setUpiId] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-
-  const handlePhoneChange = (e) => {
-    const phoneNumber = e.target.value;
-    setPhone(phoneNumber);
-    if (phoneNumber.length === 10) {
-      setUpiId(`${phoneNumber}@paytmclone`);
-    } else {
-      setUpiId("");
-    }
-  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/register", {
+      const response = await axios.post("http://localhost:5000/api/register", {
         name,
         email,
         phone,
-        upi_id: upiId,
         password,
       });
-      alert("Registration Successful!");
-      navigate("/login");
+
+      // Save token & user info after successful registration
+      localStorage.setItem("token", response.data.token);
+      setToken(response.data.token);
+      setUser(response.data.user);
+
+      alert("Registration Successful! Your UPI ID: " + response.data.upi_id);
+      navigate("/dashboard");  // Redirect to Dashboard immediately
     } catch (error) {
-      alert("Error in Registration");
+      alert(error.response?.data?.error || "Registration failed");
     }
   };
 
@@ -48,8 +44,7 @@ const Register = () => {
         <form onSubmit={handleRegister}>
           <TextField fullWidth label="Name" margin="normal" variant="outlined" value={name} onChange={(e) => setName(e.target.value)} />
           <TextField fullWidth label="Email" margin="normal" variant="outlined" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <TextField fullWidth label="Phone" margin="normal" variant="outlined" value={phone} onChange={handlePhoneChange} />
-          <TextField fullWidth label="UPI ID" margin="normal" variant="outlined" value={upiId} disabled />
+          <TextField fullWidth label="Phone" margin="normal" variant="outlined" value={phone} onChange={(e) => setPhone(e.target.value)} />
           <TextField fullWidth label="Password" type="password" margin="normal" variant="outlined" value={password} onChange={(e) => setPassword(e.target.value)} />
           <Button type="submit" variant="contained" color="primary" fullWidth>Register</Button>
         </form>

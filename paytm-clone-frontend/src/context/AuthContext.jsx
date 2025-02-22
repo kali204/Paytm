@@ -24,20 +24,6 @@ const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  // Login function
-  const login = async (email, password) => {
-    try {
-      const response = await axios.post("http://localhost:5000/api/login", { email, password });
-      const { token, user } = response.data;
-      localStorage.setItem("token", token);
-      setToken(token);
-      setUser(user);
-      return { success: true };
-    } catch (error) {
-      return { success: false, message: "Invalid Credentials" };
-    }
-  };
-
   // Logout function
   const logout = () => {
     localStorage.removeItem("token");
@@ -46,7 +32,7 @@ const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, setUser, setToken, logout }}>
       {children}
     </AuthContext.Provider>
   );

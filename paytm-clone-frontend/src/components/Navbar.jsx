@@ -18,6 +18,7 @@ const Navbar = () => {
           <>
             <Button color="inherit" onClick={() => navigate("/dashboard")}>Dashboard</Button>
             <Button color="inherit" onClick={() => navigate("/transactions")}>Transactions</Button>
+            <Button color="inherit" onClick={() => navigate("/send-money")}>Send Money</Button>
             <Button color="inherit" onClick={logout}>Logout</Button>
           </>
         ) : (
