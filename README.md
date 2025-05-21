@@ -1,55 +1,104 @@
-# PayMe
+# **Paytm Clone**  
 
-PayMe is a comprehensive MERN (MongoDB, Express.js, React.js, Node.js) application designed to emulate online payment functionalities similar to leading platforms like Paytm. With PayMe, users can effortlessly send money to friends and other users, view transaction histories, and track account balances before and after transactions. Experience seamless online transactions with PayMe.
+Paytm Clone is a full-stack web application that replicates online payment functionalities such as money transfers, transaction history, and account balance tracking.
 
 <div align="center">
-  <img src="https://i.ibb.co/6YG4Wf5/background.jpg" alt="PayMe Logo">
+  <img src="https://i.ibb.co/6YG4Wf5/background.jpg" alt="Paytm Clone Logo">
 </div>
 
-## Setup Instructions
+---
 
-Follow these steps to set up PayMe locally:
+## **Features**  
+✅ User authentication (Signup/Login) using JWT  
+✅ Secure money transfer between users  
+✅ View transaction history  
+✅ Check account balance  
+✅ Fast and responsive UI  
 
-1. Prerequisites:
-   - Node.js and npm installed on your machine
-   - MongoDB installed and running locally
+---
 
-2. Installation:
-   - Clone the repository to your local machine:
-     ```bash
-     git clone https://github.com/your-username/payme.git
-     ```
+## **Setup Instructions**  
 
-   - Navigate to the project directory:
-     ```bash
-     cd payme
-     ```
+### **1. Prerequisites**  
+Ensure you have the following installed on your system:  
+- **Python 3**  
+- **MySQL Server** (installed and running)  
+- **Node.js** and **npm**  
 
-   - Install server dependencies:
-     ```bash
-     npm install
-     ```
+---
 
-   - Navigate to the client directory:
-     ```bash
-     cd client
-     ```
+### **2. Backend Setup (Flask + MySQL)**  
 
-   - Install client dependencies:
-     ```bash
-     npm install
-     ```
+1. Clone the repository:  
+   ```bash
+   git clone https://github.com/kali204/Paytm.git
+   ```
+2. Navigate to the backend directory:  
+   ```bash
+   cd Paytm/backend
+   ```
+3. Create a virtual environment and activate it:  
+   ```bash
+   python -m venv venv  
+   source venv/bin/activate  # On Windows: venv\Scripts\activate  
+   ```
+4. Install dependencies:  
+   ```bash
+   pip install -r requirements.txt
+   ```
+5. Set up the `.env` file in the backend directory:  
+   ```ini
+   DATABASE_URL=mysql+pymysql://username:password@localhost/paytm_clone
+   JWT_SECRET_KEY=your_secret_key
+   ```
+6. Apply database migrations:  
+   ```bash
+   flask db upgrade
+   ```
+7. Start the Flask server:  
+   ```bash
+   flask run
+   ```  
+   The API will be available at **[http://127.0.0.1:5000/](http://127.0.0.1:5000/)**  
 
-3. Running the Application:
+---
 
-   - To start the backend, run:
-     ```bash
-     node index.js
-     ```
+### **3. Frontend Setup (React.js + Tailwind CSS)**  
 
-   - To start the frontend, run:
-     ```bash
-     npm run dev
-     ```
+1. Navigate to the frontend directory:  
+   ```bash
+   cd ../frontend
+   ```
+2. Install frontend dependencies:  
+   ```bash
+   npm install
+   ```
+3. Start the React frontend:  
+   ```bash
+   npm run dev
+   ```
 
-   - Visit `http://localhost:3000` in your web browser to access the PayMe application.
+---
+
+### **4. Running the Application**  
+
+Once both the backend and frontend are running, open your browser and visit:  
+**[http://localhost:3000](http://localhost:3000)**  
+
+---
+
+## **Tech Stack**  
+✅ **Frontend:** React.js, Tailwind CSS  
+✅ **Backend:** Flask, Flask-JWT  
+✅ **Database:** MySQL  
+✅ **Authentication:** JWT  
+
+---
+
+## **Contributing**  
+Want to contribute? Fork the repository and submit a pull request! 🚀  
+
+---
+
+Save this content as **README.md** in your project directory. 🚀
+
