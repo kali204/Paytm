@@ -9,7 +9,7 @@ const Transactions = () => {
     useEffect(() => {
         const fetchTransactions = async () => {
             try {
-                const response = await axios.get("http://127.0.0.1:5000/account/transactions", { // ✅ Direct URL
+                const response = await axios.get("http://127.0.0.1:5000/account/transactions", {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`,
                     },
@@ -20,7 +20,7 @@ const Transactions = () => {
                 if (!response.data || response.data.length === 0) {
                     setError("No transactions found.");
                 } else {
-                    setTransactions(response.data); // ✅ Ensure correct data structure
+                    setTransactions(response.data);
                 }
             } catch (err) {
                 console.error("❌ Error fetching transactions:", err.response?.data || err.message);
@@ -49,6 +49,7 @@ const Transactions = () => {
                                 <th className="p-2 border">Receiver</th>
                                 <th className="p-2 border">Amount (Rs)</th>
                                 <th className="p-2 border">Status</th>
+                                <th className="p-2 border">Reason (If Failed)</th>
                                 <th className="p-2 border">Date</th>
                             </tr>
                         </thead>
@@ -57,9 +58,12 @@ const Transactions = () => {
                                 <tr key={t.id} className="text-center">
                                     <td className="p-2 border">{t.sender_email || "N/A"}</td>
                                     <td className="p-2 border">{t.receiver_email || "N/A"}</td>
-                                    <td className="p-2 border">₹{Number(t.amount)? Number(t.amount).toFixed(2):"N/A"}</td>
-                                    <td className={`p-2 border ${t.status === "success" ? "text-green-500" : "text-red-500"}`}>
+                                    <td className="p-2 border">₹{Number(t.amount) ? Number(t.amount).toFixed(2) : "N/A"}</td>
+                                    <td className={`p-2 border ${t.status === "completed" ? "text-green-500" : "text-red-500"}`}>
                                         {t.status}
+                                    </td>
+                                    <td className="p-2 border">
+                                        {t.status === "failed" ? (t.failure_reason || "Unknown Error") : "N/A"}
                                     </td>
                                     <td className="p-2 border">
                                         {t.timestamp ? new Date(t.timestamp).toLocaleString() : "N/A"}

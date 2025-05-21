@@ -32,7 +32,9 @@ def get_transactions():
                 u2.email AS receiver_email, 
                 CAST(t.amount AS DECIMAL(10,2)) AS amount,  -- Ensure amount is decimal
                 t.status, 
+                
                 t.timestamp
+                
             FROM transactions t
             JOIN users u1 ON t.sender_id = u1.id
             JOIN users u2 ON t.receiver_id = u2.id

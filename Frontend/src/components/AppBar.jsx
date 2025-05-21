@@ -1,46 +1,56 @@
 import { useNavigate } from "react-router-dom";
 
-const AppBar = ({ user }) => {
-  const navigate = useNavigate();
+const AppBar = ({ user, children }) => {
+    const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/signin");
-  };
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        navigate("/signin");
+    };
 
-  return (
-    <div className="shadow h-14 flex justify-between items-center px-4 bg-white">
-      {/* 🔥 App Title */}
-      <div className="text-xl font-bold">PayME App</div>
+    return (
+        <div className="shadow h-16 flex justify-between items-center px-6 bg-white">
+            {/* App Title */}
+            <div className="text-2xl font-bold text-blue-600">PayME App</div>
 
-      {/* 🔥 Right Section: Transactions, Username, Logout */}
-      <div className="flex items-center">
-        {/* Transactions Button */}
-        <button
-          onClick={() => navigate("/transactions")}
-          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded mx-2"
-        >
-          Transactions
-        </button>
+            {/* Right Section: Transactions, User Info, Profile, Logout */}
+            <div className="flex items-center space-x-4">
+                {/* Transactions Button */}
+                <button
+                    onClick={() => navigate("/transactions")}
+                    className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-all"
+                >
+                    Transactions
+                </button>
 
-        {/* User Info */}
-        <div className="flex items-center space-x-3">
-          <div className="text-lg font-semibold">Hello, {user?.firstName || "User"}</div>
-          <div className="rounded-full h-12 w-12 bg-slate-200 flex items-center justify-center text-xl font-semibold">
-            {user?.firstName ? user.firstName[0].toUpperCase() : "?"}
-          </div>
+                {/* Profile Button */}
+                <button
+                    onClick={() => navigate("/profile")}
+                    className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all"
+                >
+                    Profile
+                </button>
+
+                {/* User Info */}
+                <div className="flex items-center space-x-3">
+                    <div className="text-lg font-semibold text-gray-800">
+                        Hello, {user ? user.firstName : "User"}
+                    </div>
+                    <div className="rounded-full h-10 w-10 bg-blue-100 flex items-center justify-center text-xl font-semibold text-blue-600">
+                        {user?.firstName ? user.firstName[0].toUpperCase() : "?"}
+                    </div>
+                </div>
+
+                {/* Logout Button */}
+                <button
+                    onClick={handleLogout}
+                    className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-all"
+                >
+                    Logout
+                </button>
+            </div>
         </div>
-
-        {/* Logout Button */}
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded ml-4"
-        >
-          Logout
-        </button>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default AppBar;

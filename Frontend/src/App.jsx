@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import SendMoney from "./pages/SendMoney";
 import Transactions from "./components/Transactions";
 import Home from "./pages/Home";
+import AddFunds from "./components/AddFund";
+import Profile from "./components/Profile";
 
 function App() {
   const token = localStorage.getItem('token');
@@ -29,7 +31,10 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/signin" element={<Signin />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/send" element={<SendMoney />} />
+        <Route path="/send-money" element={<SendMoney />} />
+        <Route path="/request-money" element={<RequestMoney />} />
+        <Route path="/add-funds" element={<AddFunds />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/transactions" element={<Transactions />} />
          
         <Route path="*" element={<Navigate to="/signin" />} />

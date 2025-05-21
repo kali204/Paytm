@@ -11,102 +11,90 @@ CORS(send_money_bp)  # Enable CORS
 @send_money_bp.route("/account/send_money", methods=["POST"])
 @jwt_required()
 def send_money():
-    """Handles money transfer between users, ensuring ACID compliance"""
-    
-    conn = None  # ✅ Initialize `conn` to avoid UnboundLocalError
-    cursor = None  # ✅ Initialize `cursor` to avoid UnboundLocalError
+    """Handles money transfer between users using stored procedure"""
+
+    conn = None
+    cursor = None  
 
     try:
         data = request.json
-        sender_email = get_jwt_identity()  # Get sender's email from JWT
-        receiver_email = data.get("receiver_email")
+        sender_email = get_jwt_identity()
+        recipient_phone = data.get("recipient_phone")
         amount = data.get("amount")
+        note = data.get("note", "")  # Optional note (not passed to procedure)
 
-        # 🔥 Validate input
-        if not sender_email or not receiver_email or not amount:
+        if not sender_email or not recipient_phone or amount is None:
             return jsonify({"error": "Missing required fields"}), 400
-        
+
         try:
-            amount = float(amount)  # Ensure amount is a valid float
+            amount = float(amount)
             if amount <= 0:
-                return jsonify({"error": "Invalid amount"}), 400
+                return jsonify({"error": "Invalid amount, must be greater than 0"}), 400
         except ValueError:
             return jsonify({"error": "Amount must be a valid number"}), 400
 
         conn = get_db_connection()
         cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-        # 🔍 Get sender ID and balance
-        cursor.execute(
-            """
-            SELECT u.id AS user_id, a.balance 
-            FROM users u 
-            JOIN accounts a ON u.id = a.user_id 
-            WHERE u.email = %s
-            """,
-            (sender_email,)
-        )
+        cursor.execute("SELECT id FROM users WHERE email = %s", (sender_email,))
         sender = cursor.fetchone()
 
-        if not sender:
-            return jsonify({"error": "Sender not found"}), 400
-
-        # 🔍 Get receiver ID and ensure they exist in accounts
-        cursor.execute(
-            """
-            SELECT u.id AS user_id 
-            FROM users u 
-            JOIN accounts a ON u.id = a.user_id 
-            WHERE u.email = %s
-            """,
-            (receiver_email,)
-        )
+        cursor.execute("SELECT id, name FROM users WHERE phone = %s", (recipient_phone,))
         receiver = cursor.fetchone()
 
+        if not sender:
+            return jsonify({"error": "Sender not found"}), 404
         if not receiver:
-            return jsonify({"error": "Receiver not found"}), 400
+            return jsonify({"error": "Receiver not found"}), 404
 
-        # ✅ Ensure sender has enough balance
-        if sender["balance"] < amount:
-            return jsonify({"error": "Insufficient balance"}), 400
+        sender_id = sender["id"]
+        receiver_id = receiver["id"]
+        receiver_name = receiver["name"]
 
-        sender_id = sender["user_id"]
-        receiver_id = receiver["user_id"]
+        cursor.execute("SELECT balance FROM accounts WHERE user_id = %s", (sender_id,))
+        sender_account = cursor.fetchone()
 
-        # 🔄 Start ACID transaction
-        conn.begin()
+        if not sender_account:
+            return jsonify({"error": "Sender account not found"}), 404
 
-        # 🔽 Deduct from sender
-        cursor.execute(
-            "UPDATE accounts SET balance = balance - %s WHERE user_id = %s",
-            (amount, sender_id),
-        )
+        sender_balance = sender_account["balance"]
 
-        # 🔼 Credit receiver
-        cursor.execute(
-            "UPDATE accounts SET balance = balance + %s WHERE user_id = %s",
-            (amount, receiver_id),
-        )
+        if sender_balance < amount:
+            return jsonify({"error": "Insufficient funds"}), 400
 
-        # 📝 Insert transaction record
-        cursor.execute(
-            """
-            INSERT INTO transactions (sender_id, receiver_id, amount, status) 
-            VALUES (%s, %s, %s, 'success')
-            """,
-            (sender_id, receiver_id, amount),
-        )
+        print(f"🔄 Attempting to transfer ₹{amount} from {sender_email} to {recipient_phone}")
+        
+        # ✅ Only pass 3 arguments as required
+        cursor.callproc("transfer_money", (sender_id, receiver_id, amount))
+        conn.commit()
 
-        conn.commit()  # ✅ Commit transaction
-        return jsonify({"message": "Transaction successful"}), 200
+        print("✅ Transaction Successful!")
+        return jsonify({
+            "message": "Transaction successful!",
+            "receiver_name": receiver_name
+        }), 200
+
+    except pymysql.err.IntegrityError as e:
+        conn.rollback()
+        print(f"❌ Integrity Error: {e}")
+        return jsonify({"error": "Integrity Error - Possible constraint violation", "details": str(e)}), 400
+
+    except pymysql.err.OperationalError as e:
+        conn.rollback()
+        print(f"❌ Operational Error: {e}")
+        return jsonify({"error": "Database Operational Error", "details": str(e)}), 500
 
     except pymysql.MySQLError as e:
-        if conn:
-            conn.rollback()  # 🔄 Rollback on failure
-        return jsonify({"error": f"Database error: {str(e)}"}), 500
+        conn.rollback()
+        print(f"❌ MySQL Error: {e}")
+        return jsonify({"error": f"MySQL Error: {str(e)}"}), 500
+
+    except Exception as e:
+        print(f"❌ Unexpected Error: {e}")
+        return jsonify({"error": f"Unexpected Error: {str(e)}"}), 500
 
     finally:
         if cursor:
-            cursor.close()  # ✅ Close cursor only if it exists
+            cursor.close()
         if conn:
-            conn.close()  # ✅ Close connection only if it exists
+            conn.close()

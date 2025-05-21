@@ -112,6 +112,29 @@ app.register_blueprint(send_money_bp)
 from transactions import transactions_bp
 app.register_blueprint(transactions_bp)
 
+@app.route('/transfer', methods=['POST'])
+def transfer_money():
+    data = request.json
+    sender_id = data['sender_id']
+    receiver_id = data['receiver_id']
+    amount = data['amount']
+
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    try:
+        # Call MySQL stored procedure
+        cursor.callproc("transfer_money", (sender_id, receiver_id, amount))
+        conn.commit()
+        return jsonify({"message": "Transaction Successful!"}), 200
+
+    except mysql.connector.Error as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 400  # Return the error message
+
+    finally:
+        cursor.close()
+        conn.close()
 # Start the Flask server
 if __name__ == '__main__':
     app.run(debug=True)

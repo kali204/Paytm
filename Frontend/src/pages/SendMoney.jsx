@@ -1,27 +1,36 @@
-import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
 import axios from "axios";
-import { useState, useEffect } from "react";
+import QRCodeScanner from "../components/QRCodeScanner"; // Assume this component exists
 
 const SendMoney = () => {
-    const [searchParams] = useSearchParams();
-    const receiverEmail = searchParams.get("email"); // ✅ Fix: Ensure `email` is retrieved correctly
-    const receiverName = searchParams.get("name");   // ✅ Get Receiver Name
+    const [recipientPhone, setRecipientPhone] = useState("");
+    const [recipientName, setRecipientName] = useState("");
     const [amount, setAmount] = useState("");
+    const [note, setNote] = useState("");
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
+    const [showQRScanner, setShowQRScanner] = useState(false);
 
-    // ✅ Debugging: Check if `receiverEmail` is correctly retrieved
-    useEffect(() => {
-        console.log("🔍 Receiver Email:", receiverEmail);
-    }, [receiverEmail]);
+    const handleQRScan = (data) => {
+        if (data) {
+            // Assuming the QR code contains a JSON string with recipient details
+            try {
+                const recipient = JSON.parse(data);
+                setRecipientPhone(recipient.phone);
+                setRecipientName(recipient.name);
+                setShowQRScanner(false); // Close the QR scanner after successful scan
+            } catch (error) {
+                setMessage("❌ Invalid QR code. Please try again.");
+            }
+        }
+    };
 
     const initiateTransfer = async () => {
         setMessage(""); // Clear previous messages
 
-        // 🔥 Validate Fields
-        if (!receiverEmail) {
-            setMessage("❌ Receiver email is missing.");
-            console.error("⚠️ Receiver email is missing in URL.");
+        // Validate Fields
+        if (!recipientPhone) {
+            setMessage("❌ Recipient phone number is required.");
             return;
         }
         if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
@@ -32,21 +41,17 @@ const SendMoney = () => {
         setLoading(true);
 
         try {
-            console.log("🔍 Sending request:", {
-                receiver_email: receiverEmail,
-                amount: parseFloat(amount),
-            });
-
             const response = await axios.post(
                 "http://127.0.0.1:5000/account/send_money",
                 {
-                    receiver_email: receiverEmail, // ✅ Ensure email is correctly passed
+                    recipient_phone: recipientPhone,
                     amount: parseFloat(amount),
+                    note: note,
                 },
                 {
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${localStorage.getItem("token")}`, // ✅ Ensure Token is Sent
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
                     },
                 }
             );
@@ -55,6 +60,8 @@ const SendMoney = () => {
 
             if (response.data?.message?.toLowerCase().includes("successful")) {
                 setMessage("✅ Transaction successful!");
+                setAmount(""); // Clear the amount field after successful transfer
+                setNote(""); // Clear the note field
             } else {
                 setMessage(response.data?.message || "⚠️ Transaction failed.");
             }
@@ -67,56 +74,146 @@ const SendMoney = () => {
     };
 
     return (
-        <div className="flex justify-center h-screen bg-gray-100">
-            <div className="h-full flex flex-col justify-center">
-                <div className="border h-min text-card-foreground max-w-md p-4 space-y-8 w-96 bg-white shadow-lg rounded-lg">
-                    <div className="flex flex-col space-y-1.5 p-6">
-                        <h2 className="text-3xl font-bold text-center">Send Money</h2>
-                    </div>
-                    <div className="p-6">
-                        <div className="flex items-center space-x-4">
-                            <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
-                                <span className="text-2xl text-white">{receiverName ? receiverName[0].toUpperCase() : "?"}</span>
-                            </div>
-                            <h3 className="text-2xl font-semibold">{receiverName || "Unknown User"}</h3>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium leading-none" htmlFor="amount">
-                                    Amount (in Rs)
-                                </label>
-                                <input
-                                    onChange={(e) => setAmount(e.target.value)}
-                                    type="number"
-                                    value={amount}
-                                    min="1"
-                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-                                    id="amount"
-                                    placeholder="Enter amount"
-                                />
-                            </div>
-                            <button
-                                onClick={initiateTransfer}
+        <div className="flex justify-center items-center min-h-screen bg-gray-50">
+            <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
+                <div className="text-center">
+                    <h2 className="text-3xl font-bold text-gray-800 mb-2">Send Money</h2>
+                    <p className="text-gray-600">Transfer funds securely to your recipient.</p>
+                </div>
+
+                <div className="mt-8">
+                    {/* Recipient Phone Input */}
+                    <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="phone">
+                            Recipient Phone Number
+                        </label>
+                        <div className="flex items-center space-x-2">
+                            <input
+                                onChange={(e) => setRecipientPhone(e.target.value)}
+                                type="tel"
+                                value={recipientPhone}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                id="phone"
+                                placeholder="Enter phone number"
                                 disabled={loading}
-                                className={`justify-center rounded-md text-sm font-medium transition-colors h-10 px-4 py-2 w-full ${
-                                    loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 text-white hover:bg-green-600"
-                                }`}
+                            />
+                            <button
+                                onClick={() => setShowQRScanner(true)}
+                                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 font-medium transition-all"
                             >
-                                {loading ? "Processing..." : "Send Money"}
+                                Scan QR
                             </button>
-                            {message && (
-                                <div
-                                    className={`text-center text-sm mt-2 ${
-                                        message.includes("successful") ? "text-green-600" : "text-red-600"
-                                    }`}
-                                >
-                                    {message}
-                                </div>
-                            )}
                         </div>
+                    </div>
+
+                    {/* Recipient Name (if available) */}
+                    {recipientName && (
+                        <div className="mt-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="name">
+                                Recipient Name
+                            </label>
+                            <input
+                                type="text"
+                                value={recipientName}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                id="name"
+                                disabled
+                            />
+                        </div>
+                    )}
+
+                    {/* Amount Input */}
+                    <div className="mt-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="amount">
+                            Amount (in Rs)
+                        </label>
+                        <input
+                            onChange={(e) => setAmount(e.target.value)}
+                            type="number"
+                            value={amount}
+                            min="1"
+                            className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            id="amount"
+                            placeholder="0.00"
+                            disabled={loading}
+                        />
+                    </div>
+
+                    {/* Quick Amount Buttons */}
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                        {[100, 200, 500].map((quickAmount) => (
+                            <button
+                                key={quickAmount}
+                                onClick={() => setAmount(quickAmount.toString())}
+                                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 font-medium transition-all"
+                            >
+                                ₹{quickAmount}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Transaction Note */}
+                    <div className="mt-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="note">
+                            Add a note (optional)
+                        </label>
+                        <input
+                            onChange={(e) => setNote(e.target.value)}
+                            type="text"
+                            value={note}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            id="note"
+                            placeholder="e.g., For dinner"
+                            disabled={loading}
+                        />
+                    </div>
+
+                    {/* Send Money Button */}
+                    <button
+                        onClick={initiateTransfer}
+                        disabled={loading}
+                        className={`w-full mt-6 px-4 py-3 rounded-lg text-white font-semibold transition-all ${
+                            loading
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-green-500 hover:bg-green-600 active:bg-green-700"
+                        }`}
+                    >
+                        {loading ? "Processing..." : "Send Money"}
+                    </button>
+
+                    {/* Feedback Message */}
+                    {message && (
+                        <div
+                            className={`mt-4 text-center text-sm font-medium ${
+                                message.includes("successful") ? "text-green-600" : "text-red-600"
+                            }`}
+                        >
+                            {message}
+                        </div>
+                    )}
+
+                    {/* Security Message */}
+                    <div className="mt-4 text-center text-xs text-gray-500">
+                        🔒 Your transaction is secure and encrypted.
                     </div>
                 </div>
             </div>
+
+            {/* QR Code Scanner Modal */}
+            {showQRScanner && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+                    <div className="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 className="text-xl font-bold mb-4">Scan QR Code</h3>
+                        <QRCodeScanner onScan={handleQRScan} />
+                        <button
+                            onClick={() => setShowQRScanner(false)}
+                            className="mt-4 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -4,29 +4,43 @@ import AppBar from "../components/AppBar";
 import Balance from "../components/Balance";
 import Users from "../components/Users";
 import axios from "axios";
+import { CircularProgress, Snackbar } from "@mui/material";
+import TransactionsPreview from "../components/TransactionsPreview";
+import QuickActions from "../components/QuickActions.jsx";
+import Analytics from "../components/Analytics";
+
 
 const Dashboard = () => {
-  const [balance, setBalance] = useState(null); // Store balance
-  const [user, setUser] = useState(null); // Store user info
-  const [error, setError] = useState(null); // Store any error that occurs
+  const [balance, setBalance] = useState(null);
+  const [user, setUser] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchUserData() {
       try {
+        const token = localStorage.getItem("token");
         const response = await axios.get("http://127.0.0.1:5000/account/balance", {
           headers: {
-            Authorization: "Bearer " + localStorage.getItem("token"),
+            Authorization: "Bearer " + token,
           },
         });
 
         if (response.status === 200) {
-          setBalance(response.data.balance); // Set balance in state
-          setUser(response.data.user); // Store user info
+          console.log("Full API Response:", response.data); // Check user fields
+          setBalance(response.data.balance);
+          setUser(response.data.user);
+
+
         }
       } catch (error) {
         console.error("Error fetching balance:", error.response || error.message || error);
         setError("Error fetching balance.");
+        setSnackbarOpen(true);
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -34,16 +48,19 @@ const Dashboard = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("token"); // Remove token on logout
-    navigate("/signin"); // Navigate to the sign-in page
+    localStorage.removeItem("token");
+    navigate("/signin");
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
   };
 
   return (
     <div>
-      {/* Navbar with Username and Transactions Button */}
-      <AppBar>
-        <span className="text-white font-bold mx-2">
-          Hello, {user ? user.name : "User"}
+      <AppBar user={user}>
+        <span className="text-black font-semibold mx-2">
+          Hello, {user && (user.firstName || user.name || user.username) ? (user.firstName || user.name || user.username) : "User"}
         </span>
         <button
           onClick={() => navigate("/transactions")}
@@ -60,14 +77,29 @@ const Dashboard = () => {
       </AppBar>
 
       <div className="m-8">
-        {/* Show the balance if it is fetched */}
-        {error ? (
-          <div className="text-red-500 text-sm">{error}</div> // Display error if any
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <CircularProgress />
+          </div>
+        ) : error ? (
+          <div className="text-red-500 text-sm">{error}</div>
         ) : (
-          <Balance value={balance} /> // Show balance component
+          <>
+            <Balance value={balance} />
+            <QuickActions />
+            <TransactionsPreview />
+            <Analytics />
+            <Users />
+          </>
         )}
-        <Users />
       </div>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        message={error}
+      />
     </div>
   );
 };
